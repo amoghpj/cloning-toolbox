@@ -1,3 +1,5 @@
+import os
+import subprocess
 import primer3 as p3
 import pandas as pd
 from Bio import SeqIO
@@ -124,6 +126,16 @@ def get_guides(full,gene):
     """
     Call CCTop to generate candidate guide sequences
     """
+    os.mkdir(f"{gene}-dir")
+    with open(f"{gene}-dir/{gene}-sequence.fasta", "w") as outfile:
+        outfile.write(f"> {gene}\n")
+        outfile.write(f"{full}")
+    p = subprocess.Popen(["cctop","--input", f"{gene}-dir/{gene}-sequence.fasta",
+                      "--index", f"{HOME}/sequences/orf1000/orf1000",
+                       "--output", f"{gene}-dir"])
+    p.wait()
+    f = glob.glob(f"{gene}-dir/*.fasta")[0]
+
     return(seqdict, rec)
 
 def get_sequence(sequences, gene):
@@ -149,14 +161,21 @@ def main(opts):
         ## 1. Get donor DNA
         seqdict, rec = get_donor(full, gene)
         alloligos.update(seqdict)
+
         ## 2. Get guides
         seqdict, rec = get_primers(full, gene)
         alloligos.update(seqdict)
 
-        # ## 3. Get PCR primers
-        # guides = get_guides(full)
+        ## 3. Get PCR primers
+        seqdict, rec = get_guides(full)
+        alloligos.update(seqdict)
+
         rec.features.extend(primer_list)
         SeqIO.write(rec, f"{gene}.gb", "genbank")
+        with open(f"{gene}.fasta", "w") as outfile:
+            for k, val in alloligos.items():
+                outfile.write(f"{k}\n")
+                outfile.write(f"{val}\n")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
         fig = plt.figure(figsize=(10,5))
         axes = [fig.add_subplot(2,1,i) for i in range(1,3)]
