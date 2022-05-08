@@ -120,12 +120,12 @@ def get_primers(full, gene):
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start -end, 
                                           PROMOTER_START + start ),  
                                     type = "pwt_r", strand=-1))
-    seqdict[f"{gene}_wt_r"] = wt_primers[f"PRIMER_RIGHT_{i}"]
+    seqdict[f"{gene}_wt_r"] = wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
 
     start, end = del_primers[f"PRIMER_RIGHT_{i}"]
     rec.append(SeqFeature(FeatureLocation(TERM_END - start, TERM_END - start + end), 
                           type = "pdel_r", strand=-1))
-    seqdict[f"{gene}_del_r"] = del_primers[f"PRIMER_RIGHT_{i}"]
+    seqdict[f"{gene}_del_r"] = del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
     return(seqdict, rec)
 
 def get_guides(full,gene):
@@ -151,7 +151,7 @@ def get_guides(full,gene):
             header, sequence = infile.readline(), infile.readline()
             seqdict[header.strip().replace(">","")] = sequence.strip()
             start = full.find(sequence.strip())
-            rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
+            rec.append(SeqFeature(FeatureLocation(1000 + start, 1000 + start + len(sequence)), 
                          type = "guide"))
     return(seqdict, rec)
 
@@ -190,6 +190,7 @@ def main(opts):
         print("Designing guides...")
         seqdict, rec = get_guides(full, gene)
         alloligos.update(seqdict)
+        record.features.extend(rec)
 
         ## 3. Get PCR primers
         print("Designing colony pcr primers...")
