@@ -11,7 +11,7 @@ Design:
 
 Design:
 - [X] User provides input file with gene names in a csv file
-- [ ] For each row, read the line, lookup a systematic name mapper and echo genename-systematic name.
+- [X] For each row, read the line, lookup a systematic name mapper and echo genename-systematic name.
 - [ ] For each gene found, look into orf_genomic_1000.fasta, design the donor sequence.
   - [ ] Take 50bp promoter, 50bp terminator, make 20bp overlap of these two regions, spit out two 70bp primers
 - For each gene, design colony PCR primers. The deletion should give a band at ~500bp, using primer3
@@ -19,4 +19,5 @@ Design:
   2. [ ] Get reverse primer in 200bp terminator
   3. [ ] Get reverse primer in 800bp CDS.
 - [ ] Take the CDS, write to file, run cctop. Read in top five candidates.
-- [ ] Put it all together. Create a single fasta file with all generated sequences.
+- [ ] Put it all together. Create a single fasta file with all generated sequences. 
+  - The best format is to generate a single genbank file.
