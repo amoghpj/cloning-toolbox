@@ -90,7 +90,7 @@ def get_primers(full, gene):
     seqdict = {}
 
     f_primer_seq = force_forward["PRIMER_LEFT_1_SEQUENCE"]
-    start, end = force_forward[f"PRIMER_LEFT_{i}"]
+    start, end = force_forward[f"PRIMER_LEFT_1"]
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start, PROMOTER_START  + start + end), 
                                      type = "pwt_f"))
     seqdict[f"{gene}_f"] = f_primer_seq
