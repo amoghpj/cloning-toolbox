@@ -2,6 +2,7 @@ import os
 import subprocess
 import primer3 as p3
 import pandas as pd
+import glob
 from Bio import SeqIO
 from Bio.Seq import Seq
 from optparse import OptionParser
@@ -34,19 +35,17 @@ def get_donor(full, gene):
     donor_f = promoter_arm + overlap
     donor_r = terminator_arm + Seq(overlap).reverse_complement()
     seqdict = {}
-    rec = SeqRecord(full, id=gene, annotations={"molecule_type":"DNA", 
-                                                "organism":"S. cerevisiae",
-                                                "comments": "Generated automatically"},
-                    features=[SeqFeature(FeatureLocation(1000-arm_size, 1000), 
+
+    features=[SeqFeature(FeatureLocation(1000-arm_size, 1000), 
                                          type = "promoter"),
                               SeqFeature(FeatureLocation(1000, len(full)-1000), 
                                          type = "CDS"),
                               SeqFeature(FeatureLocation(len(full)-1000, 
                                                          len(full) - 1000 + arm_size),
-                                         type = "terminator")])
+                                         type = "terminator")]
     seqdict[f"{gene}_donor_f"] = donor_f
     seqdict[f"{gene}_donor_r"] = donor_r
-    return(seqdict, rec)
+    return(seqdict,features)
 
 def get_primers(full, gene):
     """
@@ -136,7 +135,9 @@ def get_guides(full,gene):
     seqdict = {} 
     rec = []
     INDEXPATH = os.path.expanduser("~") + "/s_cerevisiae/s_cerevisiae"
-    os.mkdir(f"{gene}-dir")
+    if not os.path.exists(f"{gene}-dir"):
+        os.mkdir(f"{gene}-dir")
+
     with open(f"{gene}-dir/{gene}-sequence.fasta", "w") as outfile:
         outfile.write(f"> {gene}\n")
         outfile.write(f"{full}")
@@ -155,7 +156,11 @@ def get_sequence(sequences, gene):
         sgdid, genename, *rest = fasta.description.split(" ")
         if gene.upper() == genename:
             fullorf = fasta.seq
-    return(fullorf)
+    rec = SeqRecord(fullorf, id=gene, annotations={"molecule_type":"DNA",
+                                                "organism":"S. cerevisiae",
+                                                "comments": "Generated automatically"},
+                                                features=[])
+    return(fullorf, rec)
 
 def main(opts):
     print(f"Input file: {opts.input}")
@@ -164,26 +169,31 @@ def main(opts):
     mapdf.set_index("gene",inplace=True)
     sequences = SeqIO.parse("./data/orf_genomic_1000.fasta",'fasta')
     alloligos = {}
+    features = []
     ## Loop over each row of input
     for i, gene in enumerate(genelist[0].values):
         systematic = mapdf.loc[gene.upper()].systematic
         print(i, gene, systematic)
-        full = get_sequence(sequences, gene)
+        full, record = get_sequence(sequences, gene)
         
         ## 1. Get donor DNA
+        print("Designing donors...")
         seqdict, rec = get_donor(full, gene)
         alloligos.update(seqdict)
+        record.features.extend(rec)
 
         ## 2. Get guides
-        seqdict, rec = get_primers(full, gene)
+        print("Designing guides...")
+        seqdict, rec = get_guides(full, gene)
         alloligos.update(seqdict)
 
         ## 3. Get PCR primers
-        seqdict, rec = get_guides(full)
+        print("Designing colony pcr primers...")
+        seqdict, rec = get_primers(full, gene)
         alloligos.update(seqdict)
+        record.features.extend(rec)
 
-        rec.features.extend(primer_list)
-        SeqIO.write(rec, f"{gene}.gb", "genbank")
+        SeqIO.write(record, f"{gene}.gb", "genbank")
         with open(f"{gene}.fasta", "w") as outfile:
             for k, val in alloligos.items():
                 outfile.write(f"{k}\n")
