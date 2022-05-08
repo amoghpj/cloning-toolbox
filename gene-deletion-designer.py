@@ -79,15 +79,22 @@ def get_primers(full, gene):
     CDS_END = CDS_START + CDS_LENGTH
     TERM_END = 1000 + CDS_LENGTH + 500
     TERM_START = len(full) - 1000 
+
+    seqdict = {}
+    rec = []
+
+    ### Define semantic sequence stretches
     wt = full[PROMOTER_START: CDS_END]
     deletion = full[TERM_START :TERM_END]
     promoter = full[PROMOTER_START:CDS_START]
+
+    ### Get forward primers in promoter region.
+    ## These will be used to design reverse primers further down
     force_forward =  p3.designPrimers({
         'SEQUENCE_ID': f"{gene}_pr",
         'SEQUENCE_TEMPLATE': str(promoter),
         'PRIMER_PRODUCT_SIZE_RANGE': [[100,200]]}, 
                          p3_global_parameters)
-    seqdict = {}
 
     f_primer_seq = force_forward["PRIMER_LEFT_1_SEQUENCE"]
     start, end = force_forward[f"PRIMER_LEFT_1"]
@@ -108,7 +115,7 @@ def get_primers(full, gene):
         "PRIMER_LEFT": f_primer_seq,
         'PRIMER_PRODUCT_SIZE_RANGE': [[100,400]]}, 
                          p3_global_parameters)
-    rec = []
+    
     i = 1
     start, end = wt_primers[f"PRIMER_RIGHT_{i}"]
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start -end, 
