@@ -37,12 +37,12 @@ def get_donor(full, gene):
     seqdict = {}
 
     features=[SeqFeature(FeatureLocation(1000-arm_size, 1000), 
-                                         type = "promoter"),
-                              SeqFeature(FeatureLocation(1000, len(full)-1000), 
-                                         type = "CDS"),
-                              SeqFeature(FeatureLocation(len(full)-1000, 
-                                                         len(full) - 1000 + arm_size),
-                                         type = "terminator")]
+                         type = "promoter"),
+              SeqFeature(FeatureLocation(1000, len(full)-1000), 
+                         type = "CDS"),
+              SeqFeature(FeatureLocation(len(full)-1000, 
+                                         len(full) - 1000 + arm_size),
+                         type = "terminator")]
     seqdict[f"{gene}_donor_f"] = donor_f
     seqdict[f"{gene}_donor_r"] = donor_r
     return(seqdict,features)
@@ -145,10 +145,14 @@ def get_guides(full,gene):
                       "--index", INDEXPATH,
                        "--output", f"{gene}-dir"])
     p.wait()
-    f = glob.glob(f"{gene}-dir/*.fasta")[0]
+    f = [_f for _f in glob.glob(f"{gene}-dir/*.fasta") if "-sequence" not in _f][0]
     with open(f, "r") as infile:
-        for line in infile.readlines()[:5]:
-            print(line)
+        for i in range(6):
+            header, sequence = infile.readline(), infile.readline()
+            seqdict[header.strip().replace(">","")] = sequence.strip()
+            start = full.find(sequence.strip())
+            rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
+                         type = "guide"))
     return(seqdict, rec)
 
 def get_sequence(sequences, gene):
@@ -196,7 +200,7 @@ def main(opts):
         SeqIO.write(record, f"{gene}.gb", "genbank")
         with open(f"{gene}.fasta", "w") as outfile:
             for k, val in alloligos.items():
-                outfile.write(f"{k}\n")
+                outfile.write(f"> {k}\n")
                 outfile.write(f"{val}\n")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
         fig = plt.figure(figsize=(10,5))
