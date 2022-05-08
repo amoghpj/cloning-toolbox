@@ -126,16 +126,21 @@ def get_guides(full,gene):
     """
     Call CCTop to generate candidate guide sequences
     """
+    seqdict = {} 
+    rec = []
+    INDEXPATH = os.path.expanduser("~") + "/s_cerevisiae/s_cerevisiae"
     os.mkdir(f"{gene}-dir")
     with open(f"{gene}-dir/{gene}-sequence.fasta", "w") as outfile:
         outfile.write(f"> {gene}\n")
         outfile.write(f"{full}")
     p = subprocess.Popen(["cctop","--input", f"{gene}-dir/{gene}-sequence.fasta",
-                      "--index", f"{HOME}/sequences/orf1000/orf1000",
+                      "--index", INDEXPATH,
                        "--output", f"{gene}-dir"])
     p.wait()
     f = glob.glob(f"{gene}-dir/*.fasta")[0]
-
+    with open(f, "r") as infile:
+        for line in infile.readlines()[:5]:
+            print(line)
     return(seqdict, rec)
 
 def get_sequence(sequences, gene):
