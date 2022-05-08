@@ -127,7 +127,7 @@ def get_primers(full, gene):
     rec.append(SeqFeature(FeatureLocation(TERM_END - start, TERM_END - start + end), 
                           type = "pdel_r", strand=-1))
     seqdict[f"{gene}_del_r"] = del_primers[f"PRIMER_RIGHT_{i}"]
-    return(rec,seqdict)
+    return(seqdict, rec)
 
 def get_guides(full,gene):
     """
