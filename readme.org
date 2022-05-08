@@ -1,0 +1,22 @@
+Objective: Design guides, donor oligos, and colony PCR oligos for any yeast gene deletion.
+
+Design:
+1. Rely on the ORF+1000 genome fasta file from SGD to get sequences. Designing donors sequences is straightforward.
+2. Use primer3 for primers
+3. Use a local instance of CCTOP to design guides.
+   - Tried running the docker container, couldn't get it to work.
+   - Tried installing it on modeler, there was a problem with =bowtie=, could never build the index, kep segfaulting. =bowtie2= works fine though... Might have to build it from scratch. Also, was trying to build the index from the ORF from SGD. Wonder if that was a problem.
+   - Finally,  just installed and followed instructions on saccharomyces. Built index and  annotations for yeast as recommended.
+   - CCTOP spits out a bed file, a fasta sequence list, and an excel file with details.
+
+Design:
+- [X] User provides input file with gene names in a csv file
+- [ ] For each row, read the line, lookup a systematic name mapper and echo genename-systematic name.
+- [ ] For each gene found, look into orf_genomic_1000.fasta, design the donor sequence.
+  - [ ] Take 50bp promoter, 50bp terminator, make 20bp overlap of these two regions, spit out two 70bp primers
+- For each gene, design colony PCR primers. The deletion should give a band at ~500bp, using primer3
+  1. [ ] Get forward primer in 200bp promoter
+  2. [ ] Get reverse primer in 200bp terminator
+  3. [ ] Get reverse primer in 800bp CDS.
+- [ ] Take the CDS, write to file, run cctop. Read in top five candidates.
+- [ ] Put it all together. Create a single fasta file with all generated sequences.
