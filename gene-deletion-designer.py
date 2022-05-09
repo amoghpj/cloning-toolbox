@@ -216,9 +216,9 @@ def main(opts):
         print("Generating graphic...")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
         fig = plt.figure(figsize=(6,3))
-        axes = fig.add_subplot(1,1,1)
+        axis = fig.add_subplot(1,1,1)
         graphic_record = graphic_record.crop((400,len(full) ))
-        graphic_record.plot(strand_in_label_threshold=7, ax=axes[0])
+        graphic_record.plot(strand_in_label_threshold=7, ax=axis)
         plt.savefig(f"{gene}.png")
 
 if __name__ == '__main__':
