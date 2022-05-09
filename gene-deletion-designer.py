@@ -132,8 +132,8 @@ def get_guides(full,gene):
         os.mkdir(f"{gene}-dir")
 
     with open(f"{gene}-dir/{gene}-sequence.fasta", "w") as outfile:
-        outfile.write(f"> {gene}\n")
-        outfile.write(f"{full}")
+        outfile.write(f">{gene}\n")
+        outfile.write(f"{full[1000:-1000]}")
     p = subprocess.Popen(["cctop","--input", f"{gene}-dir/{gene}-sequence.fasta",
                       "--index", INDEXPATH,
                        "--output", f"{gene}-dir"])
@@ -144,7 +144,7 @@ def get_guides(full,gene):
             header, sequence = infile.readline(), infile.readline()
             seqdict[f"sg-{gene}-{i}_" + header.strip().replace(">","")] = sequence.strip()
             start = full.find(sequence.strip())
-            rec.append(SeqFeature(FeatureLocation(1000 + start, 1000 + start + len(sequence)), 
+            rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
                          type = "guide"))
     return(seqdict, rec)
 
@@ -190,11 +190,15 @@ def main(opts):
         alloligos.update(seqdict)
         record.features.extend(rec)
 
+        print("...done!")
+
+        print("Writing genbank file...")
         SeqIO.write(record, f"{gene}.gb", "genbank")
         with open(f"{gene}.fasta", "w") as outfile:
             for k, val in alloligos.items():
                 outfile.write(f"> {k}\n")
                 outfile.write(f"{val}\n")
+        print("Generating graphic...")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
         fig = plt.figure(figsize=(10,5))
         axes = [fig.add_subplot(2,1,i) for i in range(1,3)]
