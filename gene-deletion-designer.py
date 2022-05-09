@@ -45,8 +45,8 @@ def get_donor(full, gene):
               SeqFeature(FeatureLocation(len(full)-1000, 
                                          len(full) - 1000 + arm_size),
                          type = "terminator")]
-    seqdict[f"{gene}_donor_f"] = donor_f
-    seqdict[f"{gene}_donor_r"] = donor_r
+    seqdict[f"{gene}-donor-f"] = donor_f
+    seqdict[f"{gene}-donor-r"] = donor_r
     return(seqdict,features)
 
 def get_primers(full, gene):
@@ -98,7 +98,7 @@ def get_primers(full, gene):
     start, end = force_forward[f"PRIMER_LEFT_1"]
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start, PROMOTER_START  + start + end), 
                                      type = "pwt_f"))
-    seqdict[f"{gene}_f"] = f_primer_seq
+    seqdict[f"{gene}-col-f"] = f_primer_seq
     wt_primers = p3.designPrimers({
         'SEQUENCE_ID': f"{gene}_wt",
         'SEQUENCE_TEMPLATE': str(wt),
@@ -118,12 +118,12 @@ def get_primers(full, gene):
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start -end, 
                                           PROMOTER_START + start ),  
                                     type = "pwt_r", strand=-1))
-    seqdict[f"{gene}_wt_r"] = wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
+    seqdict[f"{gene}-col-r1"] = wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
 
     start, end = del_primers[f"PRIMER_RIGHT_{i}"]
     rec.append(SeqFeature(FeatureLocation(TERM_END - start, TERM_END - start + end), 
                           type = "pdel_r", strand=-1))
-    seqdict[f"{gene}_del_r"] = del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
+    seqdict[f"{gene}-col-r2"] = del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
     return(seqdict, rec)
 
 def get_guides(full,gene):
@@ -149,8 +149,8 @@ def get_guides(full,gene):
             header, sequence = infile.readline(), infile.readline()
             name = header.strip().replace(">","")
             gibson_construct = Seq("GACTTT" + sequence.strip()[:-3] + "GTTT")
-            seqdict[f"sg-{gene}-{i}_{name}_f"] = gibson_construct[:-4]
-            seqdict[f"sg-{gene}-{i}_{name}_r"] = gibson_construct[4:].reverse_complement()
+            seqdict[f"{gene}-sgrna{name}-f"] = gibson_construct[:-4]
+            seqdict[f"{gene}-sgrna{name}-r"] = gibson_construct[4:].reverse_complement()
             start = full.find(sequence.strip())
             rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
                          type = "guide"))
@@ -202,10 +202,17 @@ def main(opts):
 
         print("Writing genbank file...")
         SeqIO.write(record, f"{gene}.gb", "genbank")
+        print("Writing fasta sequence list...")
         with open(f"{gene}.fasta", "w") as outfile:
             for k, val in alloligos.items():
-                outfile.write(f"> {k}\n")
+                outfile.write(f">{k}\n")
                 outfile.write(f"{val}\n")
+
+        print("Writing to csv...")
+        with open(f"{gene}.csv", "w") as outfile:
+            for k, val in alloligos.items():
+                outfile.write(f"{k},{val}\n")
+
         print("Generating graphic...")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
         fig = plt.figure(figsize=(10,5))
