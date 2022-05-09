@@ -103,7 +103,7 @@ def get_primers(full, gene):
         'SEQUENCE_ID': f"{gene}_wt",
         'SEQUENCE_TEMPLATE': str(wt),
         "PRIMER_LEFT": f_primer_seq,
-        "PRIMER_TARGET": str(wt)[:-100],
+        "PRIMER_TARGET": str(wt)[-100:],
         'PRIMER_PRODUCT_SIZE_RANGE': [[700, 900]]},
                                   p3_global_parameters)
     del_primers = p3.designPrimers({
@@ -153,7 +153,7 @@ def get_guides(full,gene):
             seqdict[f"{gene}-sgrna{name}-r"] = gibson_construct[4:].reverse_complement()
             start = full.find(sequence.strip())
             rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
-                         type = "guide"))
+                         type = f"guide-{i}"))
     return(seqdict, rec)
 
 def get_sequence(sequences, gene):
@@ -215,13 +215,10 @@ def main(opts):
 
         print("Generating graphic...")
         graphic_record = BiopythonTranslator().translate_record(f"{gene}.gb")
-        fig = plt.figure(figsize=(10,5))
-        axes = [fig.add_subplot(2,1,i) for i in range(1,3)]
+        fig = plt.figure(figsize=(6,3))
+        axes = fig.add_subplot(1,1,1)
         graphic_record = graphic_record.crop((400,len(full) ))
         graphic_record.plot(strand_in_label_threshold=7, ax=axes[0])
-        cropped = graphic_record.crop((950,1050))
-        cropped.plot(ax=axes[1])
-        cropped.plot_sequence(ax=axes[1])
         plt.savefig(f"{gene}.png")
 
 if __name__ == '__main__':
