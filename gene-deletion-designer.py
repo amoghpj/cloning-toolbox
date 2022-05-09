@@ -11,10 +11,6 @@ from Bio.SeqRecord import SeqRecord
 from dna_features_viewer import BiopythonTranslator
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from dna_features_viewer import GraphicFeature, GraphicRecord
-# features=[GraphicFeature(start=0, end=len(seq), strand=+1, color="#000000",
-#                   label="Template")]
-# 
-
 
 def get_options():
     parse = OptionParser()
@@ -24,16 +20,17 @@ def get_options():
 
 def get_donor(full, gene):
     """
-    Not implemented
+    Get donor sequencs
     """
     arm_size = 50
     overlap_size = 20
     donor_f, donor_r = "", ""
     promoter_arm = full[1000-arm_size:1000]
     terminator_arm = full[-1000:-1000 + arm_size].reverse_complement()
-    overlap = promoter_arm[-overlap_size]
-    donor_f = promoter_arm + overlap
-    donor_r = terminator_arm + Seq(overlap).reverse_complement()
+    overlap_l = promoter_arm[int(-overlap_size/2):]
+    overlap_r = terminator_arm[int(-overlap_size/2):]
+    donor_f = promoter_arm + overlap_r.reverse_complement()
+    donor_r = terminator_arm + overlap_l.reverse_complement()
     seqdict = {}
 
     features=[SeqFeature(FeatureLocation(1000-arm_size, 1000), 
@@ -53,9 +50,6 @@ def get_primers(full, gene):
     """
     p3_global_parameters = {
         'PRIMER_OPT_SIZE': 20,
-        # 'PRIMER_PICK_INTERNAL_OLIGO': 1,
-        # 'PRIMER_INTERNAL_MAX_SELF_END': 8,
-        # 'PRIMER_INTERNAL_MAX_POLY_X': 100,
         'PRIMER_MIN_SIZE': 18,
         'PRIMER_MAX_SIZE': 25,
         'PRIMER_OPT_TM': 60.0,
@@ -106,7 +100,6 @@ def get_primers(full, gene):
         "PRIMER_LEFT": f_primer_seq,
         "PRIMER_TARGET": str(wt)[:-100],
         'PRIMER_PRODUCT_SIZE_RANGE': [[700, 900]]},
-        #'SEQUENCE_INCLUDED_REGION': [0, len(wt)]}, 
                                   p3_global_parameters)
     del_primers = p3.designPrimers({
         'SEQUENCE_ID': f"{gene}_del",
@@ -149,7 +142,7 @@ def get_guides(full,gene):
     with open(f, "r") as infile:
         for i in range(6):
             header, sequence = infile.readline(), infile.readline()
-            seqdict[header.strip().replace(">","")] = sequence.strip()
+            seqdict[f"sg-{gene}-{i}_" + header.strip().replace(">","")] = sequence.strip()
             start = full.find(sequence.strip())
             rec.append(SeqFeature(FeatureLocation(1000 + start, 1000 + start + len(sequence)), 
                          type = "guide"))
@@ -161,8 +154,7 @@ def get_sequence(sequences, gene):
         if gene.upper() == genename:
             fullorf = fasta.seq
     rec = SeqRecord(fullorf, id=gene, annotations={"molecule_type":"DNA",
-                                                "organism":"S. cerevisiae",
-                                                "comments": "Generated automatically"},
+                                                "organism":"S. cerevisiae"},
                                                 features=[])
     return(fullorf, rec)
 
