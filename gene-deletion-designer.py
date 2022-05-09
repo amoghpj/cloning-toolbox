@@ -74,7 +74,7 @@ def get_primers(full, gene):
     PROMOTER_START = 700
     CDS_LENGTH = len(full) - 2000
     CDS_START = 1000
-    CDS_END = CDS_START + CDS_LENGTH
+    CDS_END = CDS_START + min(CDS_LENGTH, 1000)
     TERM_END = 1000 + CDS_LENGTH + 500
     TERM_START = len(full) - 1000 
 
@@ -104,7 +104,7 @@ def get_primers(full, gene):
         'SEQUENCE_TEMPLATE': str(wt),
         "PRIMER_LEFT": f_primer_seq,
         "PRIMER_TARGET": str(wt)[-100:],
-        'PRIMER_PRODUCT_SIZE_RANGE': [[700, 900]]},
+        'PRIMER_PRODUCT_SIZE_RANGE': [[800, len(wt)]]},
                                   p3_global_parameters)
     del_primers = p3.designPrimers({
         'SEQUENCE_ID': f"{gene}_del",
@@ -112,18 +112,29 @@ def get_primers(full, gene):
         "PRIMER_LEFT": f_primer_seq,
         'PRIMER_PRODUCT_SIZE_RANGE': [[100,400]]}, 
                          p3_global_parameters)
-    
-    i = 1
-    start, end = wt_primers[f"PRIMER_RIGHT_{i}"]
+    pr_loc = full.find(f_primer_seq)
+    for i in range(4):
+        start, end = wt_primers[f"PRIMER_RIGHT_{i}"]
+        loc = full.find(Seq(wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]).reverse_complement())
+        if (loc - pr_loc > 600) and (loc - pr_loc < 1000):
+            break
+        
     rec.append(SeqFeature(FeatureLocation(PROMOTER_START + start -end, 
                                           PROMOTER_START + start ),  
-                                    type = "pwt_r", strand=-1))
-    seqdict[f"{gene}-col-r1"] = wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
+                          type = "pwt_r", strand=-1))
+    wt_loc = full.find(Seq(wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]).reverse_complement())
+    seqdict[f"{gene}-col-r1({wt_loc - pr_loc})"] = wt_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
 
+    i = 0
     start, end = del_primers[f"PRIMER_RIGHT_{i}"]
     rec.append(SeqFeature(FeatureLocation(TERM_END - start, TERM_END - start + end), 
                           type = "pdel_r", strand=-1))
-    seqdict[f"{gene}-col-r2"] = del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
+    del_loc = full.find(Seq(del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]).reverse_complement())
+    print(pr_loc)
+    print(wt_loc)
+    print(del_loc)
+
+    seqdict[f"{gene}-col-r2({del_loc - CDS_LENGTH - pr_loc })"] = del_primers[f"PRIMER_RIGHT_{i}_SEQUENCE"]
     return(seqdict, rec)
 
 def get_guides(full,gene):
@@ -156,11 +167,13 @@ def get_guides(full,gene):
                          type = f"guide-{i}"))
     return(seqdict, rec)
 
-def get_sequence(sequences, gene):
+def get_sequence(gene):
+    sequences = SeqIO.parse("./data/orf_genomic_1000.fasta",'fasta')
     for fasta in sequences:
         sgdid, genename, *rest = fasta.description.split(" ")
         if gene.upper() == genename:
             fullorf = fasta.seq
+            break
     rec = SeqRecord(fullorf, id=gene, annotations={"molecule_type":"DNA",
                                                 "organism":"S. cerevisiae"},
                                                 features=[])
@@ -171,14 +184,13 @@ def main(opts):
     genelist = pd.read_csv(opts.input, header=None)
     mapdf = pd.read_csv("./data/sgd-genename.csv",header=None, names=["systematic", "gene"])
     mapdf.set_index("gene",inplace=True)
-    sequences = SeqIO.parse("./data/orf_genomic_1000.fasta",'fasta')
-    alloligos = {}
-    features = []
+
     ## Loop over each row of input
     for i, gene in enumerate(genelist[0].values):
+        alloligos = {}
         systematic = mapdf.loc[gene.upper()].systematic
         print(i, gene, systematic)
-        full, record = get_sequence(sequences, gene)
+        full, record = get_sequence(gene)
         
         ## 1. Get donor DNA
         print("Designing donors...")
@@ -186,11 +198,11 @@ def main(opts):
         alloligos.update(seqdict)
         record.features.extend(rec)
 
-        ## 2. Get guides
-        print("Designing guides...")
-        seqdict, rec = get_guides(full, gene)
-        alloligos.update(seqdict)
-        record.features.extend(rec)
+        # ## 2. Get guides
+        # print("Designing guides...")
+        # seqdict, rec = get_guides(full, gene)
+        # alloligos.update(seqdict)
+        # record.features.extend(rec)
 
         ## 3. Get PCR primers
         print("Designing colony pcr primers...")
