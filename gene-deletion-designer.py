@@ -1,3 +1,8 @@
+"""
+Description: Script to generate sgRNA candidates, donor sequences, and colony verification primers.
+Author: Amogh Jalihal
+Date: 2022-05-08
+"""
 import os
 import subprocess
 import primer3 as p3
@@ -142,7 +147,10 @@ def get_guides(full,gene):
     with open(f, "r") as infile:
         for i in range(6):
             header, sequence = infile.readline(), infile.readline()
-            seqdict[f"sg-{gene}-{i}_" + header.strip().replace(">","")] = sequence.strip()
+            name = header.strip().replace(">","")
+            gibson_construct = Seq("GACTTT" + sequence.strip()[:-3] + "GTTT")
+            seqdict[f"sg-{gene}-{i}_{name}_f"] = gibson_construct[:-4]
+            seqdict[f"sg-{gene}-{i}_{name}_r"] = gibson_construct[4:].reverse_complement()
             start = full.find(sequence.strip())
             rec.append(SeqFeature(FeatureLocation(start, start + len(sequence)), 
                          type = "guide"))
